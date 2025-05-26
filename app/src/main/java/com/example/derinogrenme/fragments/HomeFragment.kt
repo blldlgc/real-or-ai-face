@@ -159,7 +159,7 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        predictionAdapter = PredictionAdapter(storageService)
+        predictionAdapter = PredictionAdapter(emptyList(), storageService)
         binding.recentPredictionsRecyclerView.apply {
             adapter = predictionAdapter
             layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context)
