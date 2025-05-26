@@ -27,9 +27,11 @@ class FirestoreService {
                 "timestamp" to Date()
             )
 
-            db.collection(predictionsCollection)
+            Log.d("FirestoreService", "Tahmin kaydediliyor... UserId: $userId")
+            val docRef = db.collection(predictionsCollection)
                 .add(predictionData)
                 .await()
+            Log.d("FirestoreService", "Tahmin başarıyla kaydedildi. DocId: ${docRef.id}")
         } catch (e: Exception) {
             Log.e("FirestoreService", "Tahmin kaydedilirken hata oluştu", e)
             throw e
@@ -40,24 +42,38 @@ class FirestoreService {
         return try {
             Log.d("FirestoreService", "Tahminler getiriliyor... UserId: $userId, Limit: $limit")
             
-            val result = db.collection(predictionsCollection)
+            val query = db.collection(predictionsCollection)
                 .whereEqualTo("userId", userId)
                 .orderBy("timestamp", Query.Direction.DESCENDING)
                 .limit(limit.toLong())
-                .get()
-                .await()
 
+            Log.d("FirestoreService", "Firestore sorgusu oluşturuldu: $query")
+            
+            val result = query.get().await()
             Log.d("FirestoreService", "Firestore'dan ${result.documents.size} tahmin alındı")
 
             result.documents.mapNotNull { doc ->
                 try {
-                    val prediction = doc.toObject(Prediction::class.java)
-                    if (prediction == null) {
-                        Log.e("FirestoreService", "Döküman Prediction nesnesine dönüştürülemedi: ${doc.id}")
+                    Log.d("FirestoreService", "Döküman işleniyor: ${doc.id}")
+                    Log.d("FirestoreService", "Döküman verileri: ${doc.data}")
+                    
+                    val result = doc.getString("result")
+                    val confidence = doc.getDouble("confidence")?.toFloat()
+                    val date = doc.getString("date")
+                    val imageUrl = doc.getString("imageUrl")
+
+                    if (result == null || confidence == null || date == null) {
+                        Log.e("FirestoreService", "Döküman gerekli alanları içermiyor: ${doc.id}")
                         null
                     } else {
-                        Log.d("FirestoreService", "Tahmin başarıyla dönüştürüldü: ${doc.id}")
-                        prediction
+                        Prediction(
+                            result = result,
+                            confidence = confidence,
+                            date = date,
+                            imageUrl = imageUrl
+                        ).also {
+                            Log.d("FirestoreService", "Tahmin başarıyla oluşturuldu: $it")
+                        }
                     }
                 } catch (e: Exception) {
                     Log.e("FirestoreService", "Döküman dönüştürme hatası: ${doc.id}", e)

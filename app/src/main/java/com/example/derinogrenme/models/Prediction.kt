@@ -4,14 +4,14 @@ import com.google.firebase.firestore.PropertyName
 
 data class Prediction(
     @PropertyName("result")
-    val result: String = "", // "REAL" veya "FAKE"
+    val result: String, // REAL veya FAKE
     
     @PropertyName("confidence")
-    val confidence: Float = 0f,
+    val confidence: Float, // 0.0 - 1.0 arası güven oranı
     
     @PropertyName("date")
-    val date: String = "",
+    val date: String, // dd/MM/yyyy HH:mm formatında tarih
     
     @PropertyName("imageUrl")
-    val imageUrl: String? = null
+    val imageUrl: String? = null // Resim URL'i (opsiyonel)
 ) 
