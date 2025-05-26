@@ -30,6 +30,16 @@ import android.graphics.Color
 import android.widget.TextView
 import com.example.derinogrenme.R
 import com.example.derinogrenme.models.Prediction
+import android.Manifest
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.MediaStore
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
+import androidx.core.content.FileProvider
 
 class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
@@ -39,76 +49,14 @@ class HomeFragment : Fragment() {
     private lateinit var predictionAdapter: PredictionAdapter
     private lateinit var tflite: Interpreter
     private val IMG_SIZE = 224
+    private var currentPhotoPath: String? = null
 
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             try {
                 val imageUri = result.data?.data
                 imageUri?.let {
-                    // Seçilen resmi ImageView'da göster
-                    binding.selectedImageView.setImageURI(it)
-
-                    // Resmi işle ve tahmin yap
-                    val inputStream = requireContext().contentResolver.openInputStream(it)
-                    val imageBitmap = BitmapFactory.decodeStream(inputStream)
-                    val resizedBitmap = android.graphics.Bitmap.createScaledBitmap(imageBitmap, IMG_SIZE, IMG_SIZE, true)
-
-                    val tensorImage = TensorImage(DataType.FLOAT32)
-                    tensorImage.load(resizedBitmap)
-
-                    val imageProcessor = ImageProcessor.Builder()
-                        .add(ResizeOp(IMG_SIZE, IMG_SIZE, ResizeOp.ResizeMethod.BILINEAR))
-                        .add(NormalizeOp(0f, 1f))
-                        .build()
-
-                    val processedImage = imageProcessor.process(tensorImage)
-                    val inputBuffer = processedImage.buffer
-
-                    val output = Array(1) { FloatArray(1) }
-                    tflite.run(inputBuffer, output)
-
-                    val outputShape = tflite.getOutputTensor(0).shape()
-                    Log.d("TFLiteDebug", "Model output shape: ${outputShape.contentToString()}")
-
-                    // Tahmin sonucunu göster
-                    val prediction = output[0][0]
-                    Log.d("Prediction", "Raw prediction value: $prediction")
-
-                    val isReal = prediction > 0.5f
-                    val confidence = if (isReal) prediction else 1 - prediction
-
-                    val resultText = if (isReal) "REAL" else "FAKE"
-                    val resultColor = if (isReal) "#4CAF50" else "#F44336"
-
-                    binding.resultTextView.apply {
-                        text = "Sonuç: $resultText"
-                        setTextColor(Color.parseColor(resultColor))
-                    }
-
-                    binding.confidenceTextView.text = "Güven Oranı: ${String.format("%.1f", confidence * 100)}%"
-
-                    // Resmi yükle ve tahmin sonucunu kaydet
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        try {
-                            FirebaseAuth.getInstance().currentUser?.uid?.let { userId ->
-                                // Resmi yerel depolamaya kaydet
-                                val imagePath = storageService.saveImage(it, userId)
-
-                                // Tahmin sonucunu Firestore'a kaydet
-                                val predictionObj = Prediction(
-                                    result = resultText,
-                                    confidence = confidence,
-                                    date = firestoreService.getCurrentDate(),
-                                    imageUrl = imagePath
-                                )
-
-                                firestoreService.savePrediction(userId, predictionObj)
-                                loadRecentPredictions()
-                            }
-                        } catch (e: Exception) {
-                            Toast.makeText(requireContext(), "İşlem sırasında hata oluştu: ${e.message}", Toast.LENGTH_SHORT).show()
-                        }
-                    }
+                    processImage(it)
                 } ?: run {
                     binding.resultTextView.text = "Resim seçilemedi"
                     Toast.makeText(requireContext(), "Resim seçilemedi", Toast.LENGTH_SHORT).show()
@@ -121,6 +69,34 @@ class HomeFragment : Fragment() {
         } else {
             binding.resultTextView.text = "Resim seçme işlemi iptal edildi"
             Toast.makeText(requireContext(), "Resim seçme işlemi iptal edildi", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private val cameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            try {
+                currentPhotoPath?.let { path ->
+                    val imageUri = Uri.fromFile(File(path))
+                    processImage(imageUri)
+                }
+            } catch (e: Exception) {
+                binding.resultTextView.text = "Hata: ${e.message}"
+                Toast.makeText(requireContext(), "Fotoğraf işlenirken hata oluştu: ${e.message}", Toast.LENGTH_SHORT).show()
+                e.printStackTrace()
+            }
+        } else {
+            binding.resultTextView.text = "Fotoğraf çekme işlemi iptal edildi"
+            Toast.makeText(requireContext(), "Fotoğraf çekme işlemi iptal edildi", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            openCamera()
+        } else {
+            Toast.makeText(requireContext(), "Kamera izni gerekli", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -155,6 +131,10 @@ class HomeFragment : Fragment() {
 
         binding.selectImageButton.setOnClickListener {
             openGallery()
+        }
+
+        binding.cameraButton.setOnClickListener {
+            checkCameraPermission()
         }
     }
 
@@ -210,6 +190,123 @@ class HomeFragment : Fragment() {
         // Son 3 tahmini al
         val recentPredictions = predictions.takeLast(3)
         predictionAdapter.submitList(recentPredictions)
+    }
+
+    private fun checkCameraPermission() {
+        when {
+            ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED -> {
+                openCamera()
+            }
+            else -> {
+                requestPermissionLauncher.launch(Manifest.permission.CAMERA)
+            }
+        }
+    }
+
+    private fun openCamera() {
+        try {
+            val photoFile = createImageFile()
+            val photoURI = FileProvider.getUriForFile(
+                requireContext(),
+                "${requireContext().packageName}.fileprovider",
+                photoFile
+            )
+            val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE).apply {
+                putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
+                addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+            }
+            cameraLauncher.launch(takePictureIntent)
+        } catch (e: Exception) {
+            Toast.makeText(requireContext(), "Kamera açılırken hata oluştu: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun createImageFile(): File {
+        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val storageDir = requireContext().getExternalFilesDir(android.os.Environment.DIRECTORY_PICTURES)
+        return File.createTempFile(
+            "JPEG_${timeStamp}_",
+            ".jpg",
+            storageDir
+        ).apply {
+            currentPhotoPath = absolutePath
+        }
+    }
+
+    private fun processImage(imageUri: Uri) {
+        try {
+            // Seçilen resmi ImageView'da göster
+            binding.selectedImageView.setImageURI(imageUri)
+
+            // Resmi işle ve tahmin yap
+            val inputStream = requireContext().contentResolver.openInputStream(imageUri)
+            val imageBitmap = BitmapFactory.decodeStream(inputStream)
+            val resizedBitmap = android.graphics.Bitmap.createScaledBitmap(imageBitmap, IMG_SIZE, IMG_SIZE, true)
+
+            val tensorImage = TensorImage(DataType.FLOAT32)
+            tensorImage.load(resizedBitmap)
+
+            val imageProcessor = ImageProcessor.Builder()
+                .add(ResizeOp(IMG_SIZE, IMG_SIZE, ResizeOp.ResizeMethod.BILINEAR))
+                .add(NormalizeOp(0f, 1f))
+                .build()
+
+            val processedImage = imageProcessor.process(tensorImage)
+            val inputBuffer = processedImage.buffer
+
+            val output = Array(1) { FloatArray(1) }
+            tflite.run(inputBuffer, output)
+
+            val outputShape = tflite.getOutputTensor(0).shape()
+            Log.d("TFLiteDebug", "Model output shape: ${outputShape.contentToString()}")
+
+            // Tahmin sonucunu göster
+            val prediction = output[0][0]
+            Log.d("Prediction", "Raw prediction value: $prediction")
+
+            val isReal = prediction > 0.5f
+            val confidence = if (isReal) prediction else 1 - prediction
+
+            val resultText = if (isReal) "REAL" else "FAKE"
+            val resultColor = if (isReal) "#4CAF50" else "#F44336"
+
+            binding.resultTextView.apply {
+                text = "Sonuç: $resultText"
+                setTextColor(Color.parseColor(resultColor))
+            }
+
+            binding.confidenceTextView.text = "Güven Oranı: ${String.format("%.1f", confidence * 100)}%"
+
+            // Resmi yükle ve tahmin sonucunu kaydet
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    FirebaseAuth.getInstance().currentUser?.uid?.let { userId ->
+                        // Resmi yerel depolamaya kaydet
+                        val imagePath = storageService.saveImage(imageUri, userId)
+
+                        // Tahmin sonucunu Firestore'a kaydet
+                        val predictionObj = Prediction(
+                            result = resultText,
+                            confidence = confidence,
+                            date = firestoreService.getCurrentDate(),
+                            imageUrl = imagePath
+                        )
+
+                        firestoreService.savePrediction(userId, predictionObj)
+                        loadRecentPredictions()
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(requireContext(), "İşlem sırasında hata oluştu: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        } catch (e: Exception) {
+            binding.resultTextView.text = "Hata: ${e.message}"
+            Toast.makeText(requireContext(), "Resim işlenirken hata oluştu: ${e.message}", Toast.LENGTH_SHORT).show()
+            e.printStackTrace()
+        }
     }
 
     override fun onDestroyView() {

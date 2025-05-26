@@ -1,11 +1,13 @@
 package com.example.derinogrenme.adapters
 
+import android.app.Dialog
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.derinogrenme.databinding.ItemPredictionBinding
+import com.example.derinogrenme.databinding.DialogImageViewerBinding
 import com.example.derinogrenme.models.Prediction
 import com.example.derinogrenme.services.StorageService
 
@@ -44,9 +46,30 @@ class PredictionAdapter(
                 // Görseli yükle
                 prediction.imageUrl?.let { imageUrl ->
                     val bitmap = storageService.loadImage(imageUrl)
-                    bitmap?.let { predictionImageView.setImageBitmap(it) }
+                    bitmap?.let { 
+                        predictionImageView.setImageBitmap(it)
+                        
+                        // Tıklama işlevselliği
+                        predictionImageView.setOnClickListener {
+                            showFullImageDialog(bitmap)
+                        }
+                    }
                 }
             }
+        }
+
+        private fun showFullImageDialog(bitmap: android.graphics.Bitmap) {
+            val dialog = Dialog(binding.root.context, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+            val dialogBinding = DialogImageViewerBinding.inflate(LayoutInflater.from(binding.root.context))
+            
+            dialog.setContentView(dialogBinding.root)
+            
+            dialogBinding.fullImageView.setImageBitmap(bitmap)
+            dialogBinding.closeButton.setOnClickListener {
+                dialog.dismiss()
+            }
+            
+            dialog.show()
         }
     }
 
