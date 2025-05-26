@@ -73,29 +73,104 @@
         app:singleSelection="true">
 
         <com.google.android.material.chip.Chip
-            android:id="@+id/todayChip"
+            android:id="@+id/dateAllChip"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Bugün"
+            android:text="Tümü"
+            android:checkable="true"
+            android:checked="true"
+            style="@style/Widget.Material3.Chip.Filter"/>
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/lastDayChip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Son 24 Saat"
             android:checkable="true"
             style="@style/Widget.Material3.Chip.Filter"/>
 
         <com.google.android.material.chip.Chip
-            android:id="@+id/weekChip"
+            android:id="@+id/lastWeekChip"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Bu Hafta"
+            android:text="Son 7 Gün"
             android:checkable="true"
             style="@style/Widget.Material3.Chip.Filter"/>
 
         <com.google.android.material.chip.Chip
-            android:id="@+id/monthChip"
+            android:id="@+id/lastMonthChip"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Bu Ay"
+            android:text="Son 30 Gün"
+            android:checkable="true"
+            style="@style/Widget.Material3.Chip.Filter"/>
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/customDateChip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Özel Tarih"
             android:checkable="true"
             style="@style/Widget.Material3.Chip.Filter"/>
     </com.google.android.material.chip.ChipGroup>
+
+    <!-- Özel Tarih Seçici -->
+    <LinearLayout
+        android:id="@+id/customDateLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Başlangıç ve Bitiş Tarihi"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:layout_marginBottom="8dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/startDateLayout"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:hint="Başlangıç">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/startDateInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:focusable="false"
+                    android:clickable="true"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/endDateLayout"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:hint="Bitiş">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/endDateInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:focusable="false"
+                    android:clickable="true"/>
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+    </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"

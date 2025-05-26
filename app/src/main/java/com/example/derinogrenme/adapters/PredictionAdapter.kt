@@ -26,13 +26,19 @@ class PredictionAdapter(
         val confidenceText: TextView = view.findViewById(R.id.confidenceText)
         val dateText: TextView = view.findViewById(R.id.dateText)
 
-        fun showFullImageDialog(bitmap: android.graphics.Bitmap) {
+        fun showFullImageDialog(imageUrl: String) {
             val dialog = Dialog(itemView.context, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
             val dialogBinding = DialogImageViewerBinding.inflate(LayoutInflater.from(itemView.context))
             
             dialog.setContentView(dialogBinding.root)
             
-            dialogBinding.fullImageView.setImageBitmap(bitmap)
+            // Resmi yükle
+            Glide.with(itemView.context)
+                .load(imageUrl)
+                .placeholder(R.drawable.ic_image_placeholder)
+                .error(R.drawable.ic_image_error)
+                .into(dialogBinding.fullImageView)
+
             dialogBinding.closeButton.setOnClickListener {
                 dialog.dismiss()
             }
@@ -56,6 +62,11 @@ class PredictionAdapter(
             .placeholder(R.drawable.ic_image_placeholder)
             .error(R.drawable.ic_image_error)
             .into(holder.imageView)
+
+        // Resme tıklama özelliği ekle
+        holder.imageView.setOnClickListener {
+            holder.showFullImageDialog(prediction.imageUrl)
+        }
 
         // Sonuç ve güven oranını ayarla
         holder.resultText.text = prediction.result
