@@ -26,13 +26,14 @@ class RegisterActivity : AppCompatActivity() {
 
     private fun setupClickListeners() {
         binding.registerButton.setOnClickListener {
+            val name = binding.nameEditText.text.toString()
             val email = binding.emailEditText.text.toString()
             val password = binding.passwordEditText.text.toString()
             val confirmPassword = binding.confirmPasswordEditText.text.toString()
 
-            if (email.isNotEmpty() && password.isNotEmpty() && confirmPassword.isNotEmpty()) {
+            if (name.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty() && confirmPassword.isNotEmpty()) {
                 if (password == confirmPassword) {
-                    createUserWithEmailAndPassword(email, password)
+                    createUserWithEmailAndPassword(name, email, password)
                 } else {
                     Toast.makeText(this, "Şifreler eşleşmiyor", Toast.LENGTH_SHORT).show()
                 }
@@ -46,17 +47,26 @@ class RegisterActivity : AppCompatActivity() {
         }
     }
 
-    private fun createUserWithEmailAndPassword(email: String, password: String) {
+    private fun createUserWithEmailAndPassword(name: String, email: String, password: String) {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener(this) { task ->
                 if (task.isSuccessful) {
-                    // Kayıt başarılı
-                    Toast.makeText(this, "Kayıt başarılı", Toast.LENGTH_SHORT).show()
-                    finish() // Login ekranına dön
+                    // Kayıt başarılı, kullanıcı profilini güncelle
+                    val user = auth.currentUser
+                    val profileUpdates = com.google.firebase.auth.UserProfileChangeRequest.Builder()
+                        .setDisplayName(name)
+                        .build()
+                    user?.updateProfile(profileUpdates)?.addOnCompleteListener { updateTask ->
+                        if (updateTask.isSuccessful) {
+                            Toast.makeText(this, "Kayıt başarılı", Toast.LENGTH_SHORT).show()
+                            finish() // Login ekranına dön
+                        } else {
+                            Toast.makeText(this, "Profil güncellenemedi: ${updateTask.exception?.message}", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 } else {
                     // Kayıt başarısız
-                    Toast.makeText(this, "Kayıt başarısız: ${task.exception?.message}",
-                        Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Kayıt başarısız: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
                 }
             }
     }
