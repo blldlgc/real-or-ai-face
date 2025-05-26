@@ -10,6 +10,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import android.util.Log
 import com.google.firebase.firestore.Query
+import com.google.firebase.Timestamp
 
 class FirestoreService {
     private val db: FirebaseFirestore = Firebase.firestore
@@ -22,9 +23,8 @@ class FirestoreService {
                 "userId" to userId,
                 "result" to prediction.result,
                 "confidence" to prediction.confidence,
-                "date" to prediction.date,
-                "imageUrl" to prediction.imageUrl,
-                "timestamp" to Date()
+                "timestamp" to Timestamp.now(),
+                "imageUrl" to prediction.imageUrl
             )
 
             Log.d("FirestoreService", "Tahmin kaydediliyor... UserId: $userId")
@@ -59,17 +59,17 @@ class FirestoreService {
                     
                     val result = doc.getString("result")
                     val confidence = doc.getDouble("confidence")?.toFloat()
-                    val date = doc.getString("date")
-                    val imageUrl = doc.getString("imageUrl")
+                    val timestamp = doc.getTimestamp("timestamp")
+                    val imageUrl = doc.getString("imageUrl") ?: ""
 
-                    if (result == null || confidence == null || date == null) {
+                    if (result == null || confidence == null || timestamp == null) {
                         Log.e("FirestoreService", "Döküman gerekli alanları içermiyor: ${doc.id}")
                         null
                     } else {
                         Prediction(
                             result = result,
                             confidence = confidence,
-                            date = date,
+                            timestamp = timestamp,
                             imageUrl = imageUrl
                         ).also {
                             Log.d("FirestoreService", "Tahmin başarıyla oluşturuldu: $it")

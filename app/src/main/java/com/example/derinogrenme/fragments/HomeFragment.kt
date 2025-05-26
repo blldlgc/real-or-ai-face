@@ -40,6 +40,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.core.content.FileProvider
+import com.google.firebase.Timestamp
 
 class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
@@ -139,7 +140,7 @@ class HomeFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        predictionAdapter = PredictionAdapter(emptyList(), storageService)
+        predictionAdapter = PredictionAdapter(emptyList())
         binding.recentPredictionsRecyclerView.apply {
             adapter = predictionAdapter
             layoutManager = androidx.recyclerview.widget.LinearLayoutManager(context)
@@ -151,7 +152,7 @@ class HomeFragment : Fragment() {
             try {
                 FirebaseAuth.getInstance().currentUser?.uid?.let { userId ->
                     val predictions = firestoreService.getRecentPredictions(userId, 3)
-                    predictionAdapter.submitList(predictions)
+                    predictionAdapter.updatePredictions(predictions)
                 }
             } catch (e: Exception) {
                 android.widget.Toast.makeText(context, "Tahminler yüklenirken hata oluştu: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
@@ -189,7 +190,7 @@ class HomeFragment : Fragment() {
     private fun updateRecentPredictions(predictions: List<Prediction>) {
         // Son 3 tahmini al
         val recentPredictions = predictions.takeLast(3)
-        predictionAdapter.submitList(recentPredictions)
+        predictionAdapter.updatePredictions(recentPredictions)
     }
 
     private fun checkCameraPermission() {
@@ -291,8 +292,8 @@ class HomeFragment : Fragment() {
                         val predictionObj = Prediction(
                             result = resultText,
                             confidence = confidence,
-                            date = firestoreService.getCurrentDate(),
-                            imageUrl = imagePath
+                            timestamp = Timestamp.now(),
+                            imageUrl = imagePath ?: ""
                         )
 
                         firestoreService.savePrediction(userId, predictionObj)

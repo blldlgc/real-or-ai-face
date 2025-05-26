@@ -75,8 +75,10 @@ class StatsFragment : Fragment() {
         val avgConfidence = predictions.map { it.confidence }.average()
         binding.statsAvgConfidence.text = String.format("%.2f%%", avgConfidence * 100)
 
-        val lastPrediction = predictions.maxByOrNull { it.date }
-        binding.statsLastPrediction.text = lastPrediction?.date ?: "-"
+        val lastPrediction = predictions.maxByOrNull { it.timestamp }
+        val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("tr"))
+        val predictionDate = Date(lastPrediction?.timestamp?.seconds?.let { it * 1000 } ?: 0)
+        binding.statsLastPrediction.text = lastPrediction?.let { dateFormat.format(predictionDate) } ?: "-"
 
         binding.successRateProgress.progress = realPercentage
         binding.successRateText.text = "$realPercentage%"

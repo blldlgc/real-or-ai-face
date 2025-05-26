@@ -1,92 +1,51 @@
 package com.example.derinogrenme
 
 import android.os.Bundle
-import android.util.Log
-import android.view.View
+import android.view.Menu
+import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
-import com.example.derinogrenme.adapters.PredictionAdapter
-import com.example.derinogrenme.databinding.ActivityHistoryBinding
-import com.example.derinogrenme.services.FirestoreService
-import com.example.derinogrenme.services.StorageService
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
-import kotlinx.coroutines.launch
+import com.example.derinogrenme.fragments.HistoryFragment
+import com.google.android.material.appbar.MaterialToolbar
 
 class HistoryActivity : AppCompatActivity() {
-    private lateinit var binding: ActivityHistoryBinding
-    private lateinit var auth: FirebaseAuth
-    private lateinit var firestoreService: FirestoreService
-    private lateinit var storageService: StorageService
-    private lateinit var predictionAdapter: PredictionAdapter
+    private lateinit var historyFragment: HistoryFragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityHistoryBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        setContentView(R.layout.activity_history)
 
-        // Firebase servislerini başlat
-        auth = Firebase.auth
-        firestoreService = FirestoreService()
-        storageService = StorageService(this)
-
-        // Toolbar ayarları
-        setSupportActionBar(binding.toolbar)
+        // Toolbar'ı ayarla
+        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.title = "Geçmiş Tahminler"
 
-        // RecyclerView ayarları
-        setupRecyclerView()
-
-        // Tahminleri yükle
-        loadPredictions()
-    }
-
-    private fun setupRecyclerView() {
-        predictionAdapter = PredictionAdapter(emptyList(), storageService)
-        binding.predictionsRecyclerView.apply {
-            adapter = predictionAdapter
-            layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this@HistoryActivity)
+        // Fragment'ı ekle
+        if (savedInstanceState == null) {
+            historyFragment = HistoryFragment()
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fragmentContainer, historyFragment)
+                .commit()
+        } else {
+            historyFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainer) as HistoryFragment
         }
     }
 
-    private fun loadPredictions() {
-        lifecycleScope.launch {
-            try {
-                val currentUser = auth.currentUser
-                if (currentUser == null) {
-                    Log.e("HistoryActivity", "Kullanıcı oturumu bulunamadı")
-                    binding.emptyView.visibility = View.VISIBLE
-                    binding.emptyView.text = "Oturum açmanız gerekiyor"
-                    return@launch
-                }
-
-                Log.d("HistoryActivity", "Tahminler yükleniyor... UserId: ${currentUser.uid}")
-                val predictions = firestoreService.getRecentPredictions(currentUser.uid, 10000)
-                Log.d("HistoryActivity", "Yüklenen tahmin sayısı: ${predictions.size}")
-
-                predictionAdapter = PredictionAdapter(predictions, storageService)
-                binding.predictionsRecyclerView.adapter = predictionAdapter
-
-                // Sonuç yoksa mesaj göster
-                binding.emptyView.visibility = if (predictions.isEmpty()) {
-                    Log.d("HistoryActivity", "Tahmin bulunamadı")
-                    View.VISIBLE
-                } else {
-                    Log.d("HistoryActivity", "Tahminler başarıyla yüklendi")
-                    View.GONE
-                }
-            } catch (e: Exception) {
-                Log.e("HistoryActivity", "Tahminler yüklenirken hata oluştu", e)
-                binding.emptyView.visibility = View.VISIBLE
-                binding.emptyView.text = "Tahminler yüklenirken hata oluştu: ${e.message}"
-            }
-        }
-    }
-
-    override fun onSupportNavigateUp(): Boolean {
-        onBackPressed()
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_history, menu)
         return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            android.R.id.home -> {
+                onBackPressed()
+                true
+            }
+            R.id.action_filter -> {
+                historyFragment.showFilterBottomSheet()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
     }
 } 

@@ -20,16 +20,15 @@
             android:background="?attr/colorSurface"
             app:titleTextColor="?attr/colorOnSurface"
             app:navigationIcon="@drawable/ic_back"
-            app:title="Geçmiş" />
+            app:title="Geçmiş"
+            app:menu="@menu/menu_history" />
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/predictionsRecyclerView"
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/fragmentContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:clipToPadding="false"
-        android:padding="16dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
     <TextView

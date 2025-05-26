@@ -4,129 +4,30 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Filtreleme Kartı -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/filterCard"
+    <!-- Seçili Filtreler -->
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/selectedFiltersChipGroup"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="2dp"
         app:layout_constraintTop_toTopOf="parent">
 
-        <LinearLayout
-            android:layout_width="match_parent"
+        <com.google.android.material.chip.Chip
+            android:id="@+id/selectedResultChip"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:text="Sonuç: Tümü"
+            app:closeIconVisible="true"
+            style="@style/Widget.Material3.Chip.Filter"/>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="12dp">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Filtreleme Seçenekleri"
-                    android:textAppearance="?attr/textAppearanceTitleMedium"
-                    android:textColor="?attr/colorOnSurface"/>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/clearFiltersButton"
-                    style="@style/Widget.Material3.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Filtreleri Temizle"
-                    android:textSize="12sp"/>
-            </LinearLayout>
-
-            <!-- Sonuç Filtresi -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Sonuç"
-                android:textAppearance="?attr/textAppearanceBodyMedium"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                android:layout_marginBottom="4dp"/>
-
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/resultFilterChipGroup"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:singleSelection="true">
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/allChip"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Tümü"
-                    android:checkable="true"
-                    android:checked="true"
-                    style="@style/Widget.Material3.Chip.Filter"/>
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/realChip"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="REAL"
-                    android:checkable="true"
-                    style="@style/Widget.Material3.Chip.Filter"/>
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/fakeChip"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="FAKE"
-                    android:checkable="true"
-                    style="@style/Widget.Material3.Chip.Filter"/>
-            </com.google.android.material.chip.ChipGroup>
-
-            <!-- Tarih Filtresi -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Tarih Aralığı"
-                android:textAppearance="?attr/textAppearanceBodyMedium"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                android:layout_marginBottom="4dp"/>
-
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/dateFilterChipGroup"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:singleSelection="true">
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/todayChip"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Bugün"
-                    android:checkable="true"
-                    style="@style/Widget.Material3.Chip.Filter"/>
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/weekChip"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Bu Hafta"
-                    android:checkable="true"
-                    style="@style/Widget.Material3.Chip.Filter"/>
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/monthChip"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Bu Ay"
-                    android:checkable="true"
-                    style="@style/Widget.Material3.Chip.Filter"/>
-            </com.google.android.material.chip.ChipGroup>
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+        <com.google.android.material.chip.Chip
+            android:id="@+id/selectedDateChip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tarih: Tümü"
+            app:closeIconVisible="true"
+            style="@style/Widget.Material3.Chip.Filter"/>
+    </com.google.android.material.chip.ChipGroup>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/predictionsRecyclerView"
@@ -134,7 +35,7 @@
         android:layout_height="0dp"
         android:padding="16dp"
         android:clipToPadding="false"
-        app:layout_constraintTop_toBottomOf="@id/filterCard"
+        app:layout_constraintTop_toBottomOf="@id/selectedFiltersChipGroup"
         app:layout_constraintBottom_toBottomOf="parent" />
 
     <ProgressBar
@@ -155,7 +56,7 @@
         android:gravity="center"
         android:padding="32dp"
         android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/filterCard"
+        app:layout_constraintTop_toBottomOf="@id/selectedFiltersChipGroup"
         app:layout_constraintBottom_toBottomOf="parent">
 
         <ImageView
