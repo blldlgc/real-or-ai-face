@@ -22,6 +22,11 @@ class RegisterActivity : AppCompatActivity() {
 
         // Buton tıklama olayları
         setupClickListeners()
+
+        // Geri butonu için click listener
+        binding.toolbar.setNavigationOnClickListener {
+            finish()
+        }
     }
 
     private fun setupClickListeners() {
