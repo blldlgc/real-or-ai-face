@@ -54,10 +54,14 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
+    implementation("com.google.firebase:firebase-messaging-ktx")
 
     implementation("com.github.bumptech.glide:glide:4.16.0")
 
     implementation("androidx.exifinterface:exifinterface:1.3.6")
+
+    // WorkManager for background tasks and notifications
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

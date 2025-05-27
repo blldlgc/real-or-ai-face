@@ -20,11 +20,26 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.example.derinogrenme.R
 import android.app.Dialog
+import com.example.derinogrenme.utils.NotificationHelper
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.Timestamp
+import java.util.Calendar
+import java.util.Date
 
 class ProfileFragment : Fragment() {
     private var _binding: FragmentProfileBinding? = null
     private val binding get() = _binding!!
     private lateinit var auth: FirebaseAuth
+    private lateinit var notificationHelper: NotificationHelper
+
+    companion object {
+        private const val NOTIFICATION_PERMISSION_CODE = 123
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -50,6 +65,7 @@ class ProfileFragment : Fragment() {
         binding.profileEmail.text = user.email ?: "-"
 
         auth = FirebaseAuth.getInstance()
+        notificationHelper = NotificationHelper(requireContext())
         setupUI()
         setupListeners()
 
@@ -85,6 +101,133 @@ class ProfileFragment : Fragment() {
 
         binding.logoutButton.setOnClickListener {
             showLogoutConfirmationDialog()
+        }
+
+        // Bildirim test butonları
+        binding.testDailySummaryButton.setOnClickListener {
+            if (checkNotificationPermission()) {
+                // Gerçek tahmin verilerini getir
+                val db = FirebaseFirestore.getInstance()
+                
+                // Bugünün başlangıcını hesapla
+                val calendar = Calendar.getInstance()
+                calendar.set(Calendar.HOUR_OF_DAY, 0)
+                calendar.set(Calendar.MINUTE, 0)
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                val startOfDay = Timestamp(calendar.time)
+                
+                Log.d("ProfileFragment", "Sorgu başlatılıyor - userId: ${auth.currentUser?.uid}, startOfDay: $startOfDay")
+                
+                db.collection("predictions")
+                    .whereEqualTo("userId", auth.currentUser?.uid)
+                    .whereGreaterThanOrEqualTo("timestamp", startOfDay)
+                    .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                    .get()
+                    .addOnSuccessListener { documents ->
+                        Log.d("ProfileFragment", "Sorgu başarılı - Bulunan döküman sayısı: ${documents.size()}")
+                        val predictionCount = documents.size()
+                        if (predictionCount > 0) {
+                            // Güven oranlarının ortalamasını hesapla
+                            val totalConfidence = documents.sumOf { doc ->
+                                val confidence = doc.getDouble("confidence") ?: 0.0
+                                Log.d("ProfileFragment", "Döküman confidence değeri: $confidence")
+                                confidence
+                            }
+                            val averageConfidence = (totalConfidence / predictionCount * 100).toInt()
+                            
+                            Log.d("ProfileFragment", "Tahmin istatistikleri - Toplam: $predictionCount, Toplam Güven: $totalConfidence, Ortalama Güven: $averageConfidence")
+                            
+                            notificationHelper.showDailySummaryNotification(predictionCount, averageConfidence)
+                            Toast.makeText(requireContext(), "Günlük özet bildirimi gönderildi", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Log.d("ProfileFragment", "Bugün için tahmin bulunamadı")
+                            Toast.makeText(requireContext(), "Bugün henüz tahmin yapılmamış", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e("ProfileFragment", "Veri getirme hatası", e)
+                        Log.e("ProfileFragment", "Hata detayı: ${e.message}")
+                        Log.e("ProfileFragment", "Hata tipi: ${e.javaClass.simpleName}")
+                        e.printStackTrace()
+                        Toast.makeText(requireContext(), "Veriler alınırken hata oluştu: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+            }
+        }
+
+        binding.testReminderButton.setOnClickListener {
+            if (checkNotificationPermission()) {
+                // Son 24 saatteki tahminleri kontrol et
+                val db = FirebaseFirestore.getInstance()
+                
+                // 24 saat öncesini hesapla
+                val calendar = Calendar.getInstance()
+                calendar.add(Calendar.HOUR, -24)
+                val dayAgo = Timestamp(calendar.time)
+                
+                Log.d("ProfileFragment", "Hatırlatma sorgusu başlatılıyor - userId: ${auth.currentUser?.uid}, dayAgo: $dayAgo")
+                
+                db.collection("predictions")
+                    .whereEqualTo("userId", auth.currentUser?.uid)
+                    .whereGreaterThanOrEqualTo("timestamp", dayAgo)
+                    .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                    .limit(1)
+                    .get()
+                    .addOnSuccessListener { documents ->
+                        Log.d("ProfileFragment", "Hatırlatma sorgusu başarılı - Döküman var mı: ${!documents.isEmpty}")
+                        if (documents.isEmpty) {
+                            notificationHelper.showReminderNotification()
+                            Toast.makeText(requireContext(), "Hatırlatma bildirimi gönderildi", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(requireContext(), "Son 24 saatte tahmin yapılmış", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e("ProfileFragment", "Hatırlatma veri getirme hatası", e)
+                        Log.e("ProfileFragment", "Hata detayı: ${e.message}")
+                        Log.e("ProfileFragment", "Hata tipi: ${e.javaClass.simpleName}")
+                        e.printStackTrace()
+                        Toast.makeText(requireContext(), "Veriler alınırken hata oluştu: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+            }
+        }
+    }
+
+    private fun checkNotificationPermission(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    requireContext(),
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                // İzin yoksa, izin iste
+                requestPermissions(
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    NOTIFICATION_PERMISSION_CODE
+                )
+                return false
+            }
+        }
+        return true
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        when (requestCode) {
+            NOTIFICATION_PERMISSION_CODE -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(requireContext(), "Bildirim izni verildi", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(
+                        requireContext(),
+                        "Bildirim izni verilmedi. Bildirimler çalışmayacak.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
         }
     }
 

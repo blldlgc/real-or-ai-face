@@ -8,40 +8,57 @@ import com.example.derinogrenme.fragments.HomeFragment
 import com.example.derinogrenme.fragments.HistoryFragment
 import com.example.derinogrenme.fragments.StatsFragment
 import com.example.derinogrenme.fragments.ProfileFragment
-import android.view.WindowManager
 import android.graphics.Color
-import android.view.WindowInsetsController
 import android.os.Build
-import android.view.View
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.appcompat.app.AppCompatDelegate
+import android.view.WindowManager
+import com.example.derinogrenme.utils.NotificationScheduler
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
+    private lateinit var notificationScheduler: NotificationScheduler
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Status bar ayarlarını yap
+        // Bildirim zamanlayıcısını başlat
+        notificationScheduler = NotificationScheduler(this)
+        notificationScheduler.scheduleNotifications()
+
+        // Tam ekran ve cutout alanını kullan
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
-        
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val lp = window.attributes
+            lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            window.attributes = lp
+        }
+
         // Tema moduna göre status bar rengini ayarla
+        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         val isDarkMode = AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_YES
         if (isDarkMode) {
             window.decorView.setBackgroundColor(Color.parseColor("#1E1E1E"))
-            windowInsetsController.isAppearanceLightStatusBars = false
+            windowInsetsController?.isAppearanceLightStatusBars = false
         } else {
             window.decorView.setBackgroundColor(Color.parseColor("#FFFFFF"))
-            windowInsetsController.isAppearanceLightStatusBars = true
+            windowInsetsController?.isAppearanceLightStatusBars = true
         }
 
         setSupportActionBar(binding.toolbar)
         setupBottomNavigation()
+
+        // BottomNavigationView alt padding'ini kaldır
+        ViewCompat.setOnApplyWindowInsetsListener(binding.bottomNavigation) { view, insets ->
+            view.setPadding(0, 0, 0, 0)
+            insets
+        }
 
         // Varsayılan olarak HomeFragment'ı göster
         if (savedInstanceState == null) {
@@ -76,7 +93,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadFragment(fragment: Fragment, addToBackStack: Boolean = true) {
-        // Önce tüm fragment'ları temizle
         supportFragmentManager.popBackStack(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
         val transaction = supportFragmentManager.beginTransaction()
             .setCustomAnimations(

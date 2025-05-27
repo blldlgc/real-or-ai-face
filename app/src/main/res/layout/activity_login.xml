@@ -11,17 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@android:color/transparent"
-        app:elevation="0dp">
-
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorSurface"
-            app:titleTextColor="?attr/colorOnSurface"
-            app:navigationIcon="@drawable/ic_back" />
-
-    </com.google.android.material.appbar.AppBarLayout>
+        app:elevation="0dp"/>
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
@@ -38,20 +28,11 @@
 
             <ImageView
                 android:id="@+id/logoImageView"
-                android:layout_width="120dp"
-                android:layout_height="120dp"
+                android:layout_width="279dp"
+                android:layout_height="210dp"
                 android:layout_marginTop="48dp"
-                android:src="@mipmap/ic_launcher"
-                android:contentDescription="Logo" />
-
-            <TextView
-                android:id="@+id/titleTextView"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="Derin Öğrenme"
-                android:textAppearance="?attr/textAppearanceHeadlineMedium"
-                android:textColor="?attr/colorOnBackground" />
+                android:contentDescription="Logo"
+                android:src="@mipmap/ic_launcher" />
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/emailLayout"
