@@ -4,6 +4,7 @@ import android.app.Dialog
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
@@ -27,10 +28,17 @@ class PredictionAdapter(
         val dateText: TextView = view.findViewById(R.id.dateText)
 
         fun showFullImageDialog(imageUrl: String) {
-            val dialog = Dialog(itemView.context, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+            val dialog = Dialog(itemView.context, R.style.TransparentDialog)
             val dialogBinding = DialogImageViewerBinding.inflate(LayoutInflater.from(itemView.context))
             
             dialog.setContentView(dialogBinding.root)
+            dialog.window?.apply {
+                setBackgroundDrawableResource(android.R.color.transparent)
+                setLayout(
+                    WindowManager.LayoutParams.MATCH_PARENT,
+                    WindowManager.LayoutParams.MATCH_PARENT
+                )
+            }
             
             // Resmi yükle
             Glide.with(itemView.context)
