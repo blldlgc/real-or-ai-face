@@ -247,6 +247,7 @@ class HomeFragment : Fragment() {
     private fun processImage(imageUri: Uri) {
         try {
             // Seçilen resmi ImageView'da göster
+            binding.selectedImageView.visibility = View.VISIBLE
             binding.selectedImageView.setImageURI(imageUri)
 
             // Resmi işle ve tahmin yap

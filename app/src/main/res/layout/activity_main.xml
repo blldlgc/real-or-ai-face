@@ -16,21 +16,12 @@
         android:background="@android:color/transparent"
         app:elevation="0dp">
 
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorSurface"
-            app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge"
-            app:titleTextColor="?attr/colorOnSurface" />
-
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/fragmentContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingBottom="?attr/actionBarSize"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
     <com.google.android.material.bottomnavigation.BottomNavigationView

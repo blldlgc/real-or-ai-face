@@ -55,7 +55,6 @@ class MainActivity : AppCompatActivity() {
             windowInsetsController?.isAppearanceLightStatusBars = true
         }
 
-        setSupportActionBar(binding.toolbar)
         setupBottomNavigation()
 
         // BottomNavigationView alt padding'ini kaldır

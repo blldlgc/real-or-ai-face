@@ -22,14 +22,11 @@ import com.google.android.material.appbar.MaterialToolbar
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import android.util.Log
-import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.derinogrenme.adapters.TopScoresAdapter
 
 class GameModeActivity : AppCompatActivity() {
     private lateinit var binding: ActivityGameModeBinding
     private lateinit var gameImageService: GameImageService
     private lateinit var gameResultService: GameResultService
-    private lateinit var topScoresAdapter: TopScoresAdapter
     private var currentImage: GameImage? = null
     private var score = 0
     private var correctAnswers = 0
@@ -62,9 +59,6 @@ class GameModeActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = "Oyun Modu"
 
-        // RecyclerView'ı ayarla
-        setupRecyclerView()
-
         // En iyi skorları yükle
         loadTopScores()
 
@@ -77,27 +71,80 @@ class GameModeActivity : AppCompatActivity() {
         setupSwipeGesture()
     }
 
-    private fun setupRecyclerView() {
-        topScoresAdapter = TopScoresAdapter()
-        binding.topScoresRecyclerView.apply {
-            layoutManager = LinearLayoutManager(this@GameModeActivity)
-            adapter = topScoresAdapter
-        }
-    }
-
     private fun loadTopScores() {
         lifecycleScope.launch {
             try {
-                val result = gameResultService.getTopScores(10)
-                result.fold(
+                // Global en iyi 3 skoru al
+                val globalResult = gameResultService.getTopScores(3)
+                globalResult.fold(
                     onSuccess = { scores ->
-                        topScoresAdapter.updateScores(scores)
+                        Log.d("GameModeActivity", "Global skorlar başarıyla alındı: ${scores.map { it.score }}")
+                        when (scores.size) {
+                            3 -> {
+                                binding.globalBestScore1.text = "1. ${scores[0].score}"
+                                binding.globalBestScore2.text = "2. ${scores[1].score}"
+                                binding.globalBestScore3.text = "3. ${scores[2].score}"
+                            }
+                            2 -> {
+                                binding.globalBestScore1.text = "1. ${scores[0].score}"
+                                binding.globalBestScore2.text = "2. ${scores[1].score}"
+                                binding.globalBestScore3.text = "3. -"
+                            }
+                            1 -> {
+                                binding.globalBestScore1.text = "1. ${scores[0].score}"
+                                binding.globalBestScore2.text = "2. -"
+                                binding.globalBestScore3.text = "3. -"
+                            }
+                            else -> {
+                                binding.globalBestScore1.text = "1. -"
+                                binding.globalBestScore2.text = "2. -"
+                                binding.globalBestScore3.text = "3. -"
+                            }
+                        }
                     },
                     onFailure = { error ->
-                        Log.e("GameModeActivity", "En iyi skorlar yüklenirken hata oluştu", error)
+                        Log.e("GameModeActivity", "Global en iyi skorlar yüklenirken hata oluştu", error)
                         Toast.makeText(
                             this@GameModeActivity,
-                            "En iyi skorlar yüklenirken hata oluştu: ${error.message}",
+                            "En iyi skorlar yüklenirken hata oluştu",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                )
+
+                // Kullanıcının en iyi 3 skorunu al
+                val userResult = gameResultService.getUserTopScores(3)
+                userResult.fold(
+                    onSuccess = { scores ->
+                        Log.d("GameModeActivity", "Kullanıcı skorları başarıyla alındı: ${scores.map { it.score }}")
+                        when (scores.size) {
+                            3 -> {
+                                binding.userBestScore1.text = "1. ${scores[0].score}"
+                                binding.userBestScore2.text = "2. ${scores[1].score}"
+                                binding.userBestScore3.text = "3. ${scores[2].score}"
+                            }
+                            2 -> {
+                                binding.userBestScore1.text = "1. ${scores[0].score}"
+                                binding.userBestScore2.text = "2. ${scores[1].score}"
+                                binding.userBestScore3.text = "3. -"
+                            }
+                            1 -> {
+                                binding.userBestScore1.text = "1. ${scores[0].score}"
+                                binding.userBestScore2.text = "2. -"
+                                binding.userBestScore3.text = "3. -"
+                            }
+                            else -> {
+                                binding.userBestScore1.text = "1. -"
+                                binding.userBestScore2.text = "2. -"
+                                binding.userBestScore3.text = "3. -"
+                            }
+                        }
+                    },
+                    onFailure = { error ->
+                        Log.e("GameModeActivity", "Kullanıcı skorları yüklenirken hata oluştu: ${error.message}", error)
+                        Toast.makeText(
+                            this@GameModeActivity,
+                            "Kullanıcı skorları yüklenirken hata oluştu: ${error.message}",
                             Toast.LENGTH_SHORT
                         ).show()
                     }

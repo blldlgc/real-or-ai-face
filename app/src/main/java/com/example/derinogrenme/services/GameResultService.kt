@@ -90,4 +90,39 @@ class GameResultService {
             Result.failure(e)
         }
     }
+
+    suspend fun getUserTopScores(limit: Int = 3): Result<List<GameResult>> {
+        return try {
+            val userId = auth.currentUser?.uid
+            if (userId == null) {
+                Log.e(TAG, "Kullanıcı giriş yapmamış")
+                return Result.failure(Exception("Kullanıcı giriş yapmamış"))
+            }
+            
+            Log.d(TAG, "Kullanıcının en yüksek skorları getiriliyor... UserId: $userId, Limit: $limit")
+            
+            val snapshot = gameResultsCollection
+                .whereEqualTo("userId", userId)
+                .orderBy("score", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .limit(limit.toLong())
+                .get()
+                .await()
+
+            val results = snapshot.documents.mapNotNull { doc ->
+                try {
+                    doc.toObject(GameResult::class.java)?.copy(id = doc.id)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Doküman dönüştürülürken hata: ${doc.id}", e)
+                    null
+                }
+            }
+            
+            Log.d(TAG, "${results.size} adet kullanıcı skoru bulundu. Skorlar: ${results.map { it.score }}")
+            Result.success(results)
+        } catch (e: Exception) {
+            Log.e(TAG, "Kullanıcı skorları getirilirken hata oluştu", e)
+            Result.failure(e)
+        }
+    }
 } 

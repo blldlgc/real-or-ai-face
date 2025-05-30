@@ -4,13 +4,25 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?android:attr/colorBackground"
-    android:fitsSystemWindows="true">
+    android:fillViewport="true"
+    android:clipToPadding="false"
+    android:paddingBottom="80dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="16dp">
+
+        <TextView
+            android:id="@+id/profileTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Profil"
+            android:textAppearance="@style/TextAppearance.Material3.HeadlineMedium"
+            android:textColor="?attr/colorOnBackground"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"/>
 
         <!-- Kullanıcı Bilgileri Kartı -->
         <com.google.android.material.card.MaterialCardView
