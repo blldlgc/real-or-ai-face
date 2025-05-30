@@ -1,11 +1,15 @@
 package com.example.derinogrenme
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ObjectAnimator
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.view.WindowManager
 import android.graphics.Color
 import android.os.Build
 import android.view.View
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -13,12 +17,19 @@ import com.bumptech.glide.Glide
 import com.example.derinogrenme.databinding.ActivityGameModeBinding
 import com.example.derinogrenme.models.GameImage
 import com.example.derinogrenme.services.GameImageService
+import com.example.derinogrenme.services.GameResultService
 import com.google.android.material.appbar.MaterialToolbar
 import kotlinx.coroutines.launch
+import kotlin.math.abs
+import android.util.Log
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.derinogrenme.adapters.TopScoresAdapter
 
 class GameModeActivity : AppCompatActivity() {
     private lateinit var binding: ActivityGameModeBinding
     private lateinit var gameImageService: GameImageService
+    private lateinit var gameResultService: GameResultService
+    private lateinit var topScoresAdapter: TopScoresAdapter
     private var currentImage: GameImage? = null
     private var score = 0
     private var correctAnswers = 0
@@ -28,6 +39,7 @@ class GameModeActivity : AppCompatActivity() {
     private var timeLeft = 60L
     private var imageTimeLeft = 0L
     private var isGameActive = true
+    private var isAnimating = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,6 +48,7 @@ class GameModeActivity : AppCompatActivity() {
 
         // GameImageService'i başlat
         gameImageService = GameImageService(this)
+        gameResultService = GameResultService()
 
         // Status bar rengini ayarla
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -49,23 +62,256 @@ class GameModeActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = "Oyun Modu"
 
-        // Resimleri yükle
+        // RecyclerView'ı ayarla
+        setupRecyclerView()
+
+        // En iyi skorları yükle
+        loadTopScores()
+
+        // Başlat butonunu ayarla
+        binding.startGameButton.setOnClickListener {
+            startGame()
+        }
+
+        // Kaydırma özelliğini ayarla
+        setupSwipeGesture()
+    }
+
+    private fun setupRecyclerView() {
+        topScoresAdapter = TopScoresAdapter()
+        binding.topScoresRecyclerView.apply {
+            layoutManager = LinearLayoutManager(this@GameModeActivity)
+            adapter = topScoresAdapter
+        }
+    }
+
+    private fun loadTopScores() {
+        lifecycleScope.launch {
+            try {
+                val result = gameResultService.getTopScores(10)
+                result.fold(
+                    onSuccess = { scores ->
+                        topScoresAdapter.updateScores(scores)
+                    },
+                    onFailure = { error ->
+                        Log.e("GameModeActivity", "En iyi skorlar yüklenirken hata oluştu", error)
+                        Toast.makeText(
+                            this@GameModeActivity,
+                            "En iyi skorlar yüklenirken hata oluştu: ${error.message}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                )
+            } catch (e: Exception) {
+                Log.e("GameModeActivity", "Beklenmeyen hata oluştu", e)
+                Toast.makeText(
+                    this@GameModeActivity,
+                    "Beklenmeyen bir hata oluştu: ${e.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+
+    private fun startGame() {
+        // Önce oyunu sıfırla
+        resetGame()
+        
+        // Resimleri yüklemeye başla
         loadImages()
-
-        // Butonları ayarla
-        setupButtons()
-
-        // Oyun süresini başlat
+        
+        // Oyun ekranını göster
+        binding.startScreenContainer.visibility = View.GONE
+        binding.gameContainer.visibility = View.VISIBLE
+        binding.gameOverContainer.visibility = View.GONE
+        
+        // Oyun zamanlayıcısını başlat
         startGameTimer()
+    }
+
+    private fun setupSwipeGesture() {
+        var startX = 0f
+        var startY = 0f
+        var currentX = 0f
+        val SWIPE_THRESHOLD = 100f
+        val ROTATION_FACTOR = 0.03f
+        val interpolator = AccelerateDecelerateInterpolator()
+
+        binding.imageCardView.setOnTouchListener { view, event ->
+            if (!isGameActive || isAnimating) return@setOnTouchListener false
+
+            when (event.action) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    startX = event.x
+                    startY = event.y
+                    currentX = 0f
+                    view.parent.requestDisallowInterceptTouchEvent(true)
+                    true
+                }
+                android.view.MotionEvent.ACTION_MOVE -> {
+                    val deltaX = event.x - startX
+                    val deltaY = event.y - startY
+
+                    // Yatay kaydırma eşiğini geçtiyse
+                    if (abs(deltaX) > abs(deltaY)) {
+                        // Kaydırma mesafesini sınırla
+                        currentX = deltaX.coerceIn(-view.width.toFloat(), view.width.toFloat())
+                        
+                        // Kartı kaydır ve döndür
+                        view.translationX = currentX
+                        view.rotation = currentX * ROTATION_FACTOR
+                        
+                        // Opaklığı ayarla
+                        val alpha = 1f - (abs(currentX) / (view.width.toFloat() * 2))
+                        view.alpha = alpha.coerceIn(0.5f, 1f)
+                        
+                        true
+                    } else {
+                        false
+                    }
+                }
+                android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                    view.parent.requestDisallowInterceptTouchEvent(false)
+                    
+                    if (abs(currentX) > SWIPE_THRESHOLD) {
+                        // Kaydırma eşiğini geçtiyse animasyonu tamamla
+                        animateCardSwipe(currentX > 0)
+                    } else {
+                        // Eşiği geçmediyse kartı geri getir
+                        view.animate()
+                            .translationX(0f)
+                            .rotation(0f)
+                            .alpha(1f)
+                            .setDuration(300)
+                            .setInterpolator(interpolator)
+                            .start()
+                    }
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    private fun animateCardSwipe(isRight: Boolean) {
+        if (isAnimating) return
+        isAnimating = true
+
+        val targetX = if (isRight) binding.imageCardView.width.toFloat() * 1.5f else -binding.imageCardView.width.toFloat() * 1.5f
+        val targetRotation = if (isRight) 10f else -10f
+        
+        // Kartı kaydır ve döndür
+        binding.imageCardView.animate()
+            .translationX(targetX)
+            .rotation(targetRotation)
+            .alpha(0f)
+            .setDuration(300)
+            .setInterpolator(AccelerateDecelerateInterpolator())
+            .withEndAction {
+                // Tahmini kontrol et
+                checkAnswer(isRight)
+                
+                // Kartı sıfırla
+                binding.imageCardView.translationX = 0f
+                binding.imageCardView.rotation = 0f
+                binding.imageCardView.alpha = 1f
+                isAnimating = false
+            }
+            .start()
+    }
+
+    private fun showResult(isCorrect: Boolean, points: Int) {
+        binding.resultTextView.apply {
+            text = if (isCorrect) {
+                setTextColor(Color.GREEN)
+                "+$points puan"
+            } else {
+                setTextColor(Color.RED)
+                "Yanlış!"
+            }
+            visibility = View.VISIBLE
+            alpha = 0f
+            
+            // Fade in
+            animate()
+                .alpha(1f)
+                .setDuration(300)
+                .withEndAction {
+                    // Fade out
+                    postDelayed({
+                        animate()
+                            .alpha(0f)
+                            .setDuration(300)
+                            .withEndAction { visibility = View.GONE }
+                            .start()
+                    }, 1000)
+                }
+                .start()
+        }
+    }
+
+    private fun checkAnswer(userGuess: Boolean) {
+        imageTimer?.cancel()
+        
+        currentImage?.let { image ->
+            val isCorrect = userGuess == image.isReal
+            
+            if (isCorrect) {
+                correctAnswers++
+                val points = if (imageTimeLeft <= 3) 15 else 10
+                score += points
+                showResult(true, points)
+            } else {
+                wrongAnswers++
+                showResult(false, 0)
+            }
+            
+            binding.scoreTextView.text = "Puan: $score"
+            loadNewImage()
+        }
     }
 
     private fun loadImages() {
         lifecycleScope.launch {
             try {
+                binding.loadingProgressBar.visibility = View.VISIBLE
+                binding.startGameButton.isEnabled = false
+                
                 gameImageService.initialize()
-                loadNewImage()
+                val firstImage = gameImageService.getNextImage()
+                
+                if (firstImage == null) {
+                    Toast.makeText(
+                        this@GameModeActivity,
+                        "Resimler yüklenemedi. Lütfen internet bağlantınızı kontrol edip tekrar deneyin.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    binding.startGameButton.isEnabled = true
+                    binding.loadingProgressBar.visibility = View.GONE
+                    return@launch
+                }
+                
+                // İlk resmi yükle
+                currentImage = firstImage
+                Glide.with(this@GameModeActivity)
+                    .load(firstImage.url)
+                    .override(512, 512)
+                    .centerCrop()
+                    .placeholder(R.drawable.placeholder_image)
+                    .error(R.drawable.placeholder_image)
+                    .into(binding.gameImageView)
+                
+                binding.loadingProgressBar.visibility = View.GONE
+                binding.startGameButton.isEnabled = true
             } catch (e: Exception) {
-                Toast.makeText(this@GameModeActivity, "Resimler yüklenirken hata oluştu: ${e.message}", Toast.LENGTH_LONG).show()
+                Log.e("GameModeActivity", "Resimler yüklenirken hata oluştu", e)
+                Toast.makeText(
+                    this@GameModeActivity,
+                    "Resimler yüklenirken hata oluştu: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+                binding.startGameButton.isEnabled = true
+                binding.loadingProgressBar.visibility = View.GONE
             }
         }
     }
@@ -84,44 +330,6 @@ class GameModeActivity : AppCompatActivity() {
                 
                 startImageTimer()
             }
-        }
-    }
-
-    private fun setupButtons() {
-        binding.realButton.setOnClickListener {
-            if (isGameActive) checkAnswer(true)
-        }
-
-        binding.fakeButton.setOnClickListener {
-            if (isGameActive) checkAnswer(false)
-        }
-
-        binding.playAgainButton.setOnClickListener {
-            resetGame()
-        }
-    }
-
-    private fun checkAnswer(userGuess: Boolean) {
-        imageTimer?.cancel()
-        
-        currentImage?.let { image ->
-            val isCorrect = userGuess == image.isReal
-            
-            if (isCorrect) {
-                correctAnswers++
-                score += if (imageTimeLeft <= 3) { // İlk 3 saniye içinde
-                    15
-                } else {
-                    10
-                }
-                Toast.makeText(this, "Doğru! +${if (imageTimeLeft <= 3) "15" else "10"} puan", Toast.LENGTH_SHORT).show()
-            } else {
-                wrongAnswers++
-                Toast.makeText(this, "Yanlış! Doğru cevap: ${if (image.isReal) "Gerçek" else "Sahte"}", Toast.LENGTH_SHORT).show()
-            }
-            
-            binding.scoreTextView.text = "Puan: $score"
-            loadNewImage()
         }
     }
 
@@ -161,11 +369,51 @@ class GameModeActivity : AppCompatActivity() {
         gameTimer?.cancel()
         imageTimer?.cancel()
         
-        binding.buttonContainer.visibility = View.GONE
+        binding.gameContainer.visibility = View.GONE
         binding.gameOverContainer.visibility = View.VISIBLE
         
         binding.finalScoreTextView.text = "Toplam Puan: $score"
         binding.statsTextView.text = "Doğru: $correctAnswers\nYanlış: $wrongAnswers"
+        
+        // Sonucu Firebase'e kaydet
+        lifecycleScope.launch {
+            try {
+                Log.d("GameModeActivity", "Oyun sonucu kaydediliyor... Score: $score")
+                
+                val result = gameResultService.saveGameResult(
+                    score = score,
+                    correctAnswers = correctAnswers,
+                    wrongAnswers = wrongAnswers,
+                    totalTime = 60 - timeLeft.toInt()
+                )
+                
+                result.fold(
+                    onSuccess = { gameResult ->
+                        Log.d("GameModeActivity", "Oyun sonucu başarıyla kaydedildi. DocId: ${gameResult.id}")
+                        Toast.makeText(
+                            this@GameModeActivity,
+                            "Sonuç kaydedildi!",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    onFailure = { error ->
+                        Log.e("GameModeActivity", "Sonuç kaydedilirken hata oluştu", error)
+                        Toast.makeText(
+                            this@GameModeActivity,
+                            "Sonuç kaydedilirken hata oluştu: ${error.message}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                )
+            } catch (e: Exception) {
+                Log.e("GameModeActivity", "Beklenmeyen hata oluştu", e)
+                Toast.makeText(
+                    this@GameModeActivity,
+                    "Beklenmeyen bir hata oluştu: ${e.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
     }
 
     private fun resetGame() {
@@ -173,13 +421,10 @@ class GameModeActivity : AppCompatActivity() {
         correctAnswers = 0
         wrongAnswers = 0
         isGameActive = true
+        timeLeft = 60L
         
-        binding.buttonContainer.visibility = View.VISIBLE
-        binding.gameOverContainer.visibility = View.GONE
         binding.scoreTextView.text = "Puan: 0"
-        
-        startGameTimer()
-        loadNewImage()
+        binding.timerTextView.text = "60"
     }
 
     override fun onSupportNavigateUp(): Boolean {
