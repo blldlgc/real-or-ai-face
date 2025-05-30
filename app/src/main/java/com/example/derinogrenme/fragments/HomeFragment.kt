@@ -41,6 +41,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import androidx.core.content.FileProvider
 import com.google.firebase.Timestamp
+import com.example.derinogrenme.GameModeActivity
 
 class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
@@ -136,6 +137,12 @@ class HomeFragment : Fragment() {
 
         binding.cameraButton.setOnClickListener {
             checkCameraPermission()
+        }
+
+        // Oyun başlatma butonu
+        binding.startGameButton.setOnClickListener {
+            val intent = Intent(requireContext(), GameModeActivity::class.java)
+            startActivity(intent)
         }
     }
 
