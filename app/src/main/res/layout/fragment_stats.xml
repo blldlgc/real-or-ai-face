@@ -150,7 +150,8 @@
                 <com.github.mikephil.charting.charts.PieChart
                     android:id="@+id/dailyStatsChart"
                     android:layout_width="match_parent"
-                    android:layout_height="200dp" />
+                    android:layout_height="200dp"
+                    android:theme="@style/ChartTheme" />
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -181,7 +182,8 @@
                 <com.github.mikephil.charting.charts.LineChart
                     android:id="@+id/weeklyStatsChart"
                     android:layout_width="match_parent"
-                    android:layout_height="200dp" />
+                    android:layout_height="200dp"
+                    android:theme="@style/ChartTheme" />
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

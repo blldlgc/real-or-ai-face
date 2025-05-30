@@ -52,6 +52,17 @@ class StatsFragment : Fragment() {
         loadStats()
     }
 
+    private fun getThemeColor(colorType: String): Int {
+        val isDarkMode = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        return when (colorType) {
+            "text" -> if (isDarkMode) android.R.color.white else android.R.color.black
+            "grid" -> android.R.color.darker_gray
+            "error" -> android.R.color.holo_red_light
+            "primary" -> android.R.color.holo_blue_dark
+            else -> if (isDarkMode) android.R.color.white else android.R.color.black
+        }
+    }
+
     private fun setupCharts() {
         // Günlük dağılım grafiği ayarları
         binding.dailyStatsChart.apply {
@@ -62,8 +73,9 @@ class StatsFragment : Fragment() {
             setDrawEntryLabels(false)
             legend.isEnabled = true
             legend.textSize = 12f
+            legend.textColor = requireContext().getColor(getThemeColor("text"))
             setEntryLabelTextSize(12f)
-            setEntryLabelColor(android.R.color.black)
+            setEntryLabelColor(requireContext().getColor(getThemeColor("text")))
         }
 
         // Haftalık trend grafiği ayarları
@@ -71,17 +83,21 @@ class StatsFragment : Fragment() {
             description.isEnabled = false
             legend.isEnabled = true
             legend.textSize = 12f
+            legend.textColor = requireContext().getColor(getThemeColor("text"))
             
             xAxis.apply {
                 position = XAxis.XAxisPosition.BOTTOM
                 granularity = 1f
                 setDrawGridLines(false)
                 textSize = 10f
+                textColor = requireContext().getColor(getThemeColor("text"))
             }
 
             axisLeft.apply {
                 setDrawGridLines(true)
                 textSize = 10f
+                textColor = requireContext().getColor(getThemeColor("text"))
+                gridColor = requireContext().getColor(getThemeColor("grid"))
             }
 
             axisRight.isEnabled = false
@@ -153,13 +169,15 @@ class StatsFragment : Fragment() {
 
         val dataSet = PieDataSet(entries, "Bugünkü Tahminler")
         dataSet.colors = listOf(
-            requireContext().getColor(android.R.color.holo_red_light),
-            requireContext().getColor(android.R.color.holo_green_light)
+            requireContext().getColor(getThemeColor("error")),
+            requireContext().getColor(getThemeColor("primary"))
         )
+        dataSet.valueTextColor = requireContext().getColor(getThemeColor("text"))
 
         val data = PieData(dataSet)
         data.setValueTextSize(12f)
         data.setValueFormatter(PercentFormatter(binding.dailyStatsChart))
+        data.setValueTextColor(requireContext().getColor(getThemeColor("text")))
 
         binding.dailyStatsChart.data = data
         binding.dailyStatsChart.invalidate()
@@ -192,12 +210,13 @@ class StatsFragment : Fragment() {
         val dataSet = LineDataSet(entries, "Haftalık Tahmin Sayısı")
         
         dataSet.apply {
-            color = requireContext().getColor(android.R.color.holo_blue_dark)
-            setCircleColor(requireContext().getColor(android.R.color.holo_blue_dark))
+            color = requireContext().getColor(getThemeColor("primary"))
+            setCircleColor(requireContext().getColor(getThemeColor("primary")))
             lineWidth = 2f
             circleRadius = 4f
             setDrawCircleHole(false)
             valueTextSize = 10f
+            valueTextColor = requireContext().getColor(getThemeColor("text"))
         }
 
         val data = LineData(dataSet)

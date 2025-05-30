@@ -69,4 +69,11 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
+
+    <style name="ChartTheme" parent="Theme.Material3.DayNight">
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="android:textColorPrimary">?attr/colorPrimary</item>
+        <item name="android:textColorSecondary">?attr/colorSecondary</item>
+        <item name="android:colorBackground">@android:color/transparent</item>
+    </style>
 </resources>
