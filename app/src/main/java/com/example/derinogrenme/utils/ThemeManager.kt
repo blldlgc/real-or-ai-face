@@ -1,4 +1,4 @@
-package com.derinogrenme.derinogrenmeandroid.utils
+package com.example.derinogrenme.utils
 
 import android.content.Context
 import android.content.SharedPreferences

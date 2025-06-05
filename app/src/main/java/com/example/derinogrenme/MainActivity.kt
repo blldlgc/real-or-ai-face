@@ -17,15 +17,18 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import android.view.WindowManager
 import com.example.derinogrenme.utils.NotificationScheduler
+import com.example.derinogrenme.utils.ThemeManager
 import android.content.Context
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var notificationScheduler: NotificationScheduler
+    private lateinit var themeManager: ThemeManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Tema ayarını yükle
-        loadThemePreference()
+        themeManager = ThemeManager(this)
+        themeManager.applyThemeMode(themeManager.getThemeMode())
         
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -69,15 +72,6 @@ class MainActivity : AppCompatActivity() {
                 .replace(R.id.fragmentContainer, HomeFragment())
                 .commit()
         }
-    }
-
-    private fun loadThemePreference() {
-        val prefs = getSharedPreferences("settings", Context.MODE_PRIVATE)
-        val isDark = prefs.getBoolean("dark_mode", false)
-        AppCompatDelegate.setDefaultNightMode(
-            if (isDark) AppCompatDelegate.MODE_NIGHT_YES
-            else AppCompatDelegate.MODE_NIGHT_NO
-        )
     }
 
     private fun setupBottomNavigation() {

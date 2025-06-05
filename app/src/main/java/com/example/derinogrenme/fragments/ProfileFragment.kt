@@ -21,6 +21,7 @@ import com.google.android.material.textfield.TextInputLayout
 import com.example.derinogrenme.R
 import android.app.Dialog
 import com.example.derinogrenme.utils.NotificationHelper
+import com.example.derinogrenme.utils.ThemeManager
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -36,6 +37,7 @@ class ProfileFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var auth: FirebaseAuth
     private lateinit var notificationHelper: NotificationHelper
+    private lateinit var themeManager: ThemeManager
 
     companion object {
         private const val NOTIFICATION_PERMISSION_CODE = 123
@@ -66,23 +68,20 @@ class ProfileFragment : Fragment() {
 
         auth = FirebaseAuth.getInstance()
         notificationHelper = NotificationHelper(requireContext())
+        themeManager = ThemeManager(requireContext())
         setupUI()
         setupListeners()
 
         // Tema switch ayarı
-        val prefs = requireContext().getSharedPreferences("settings", Context.MODE_PRIVATE)
-        val isDark = prefs.getBoolean("dark_mode", false)
-        binding.themeSwitch.isChecked = isDark
+        binding.themeSwitch.isChecked = themeManager.getThemeMode()
         binding.themeSwitch.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-                prefs.edit().putBoolean("dark_mode", true).apply()
-                Toast.makeText(requireContext(), "Koyu tema seçildi", Toast.LENGTH_SHORT).show()
-            } else {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-                prefs.edit().putBoolean("dark_mode", false).apply()
-                Toast.makeText(requireContext(), "Açık tema seçildi", Toast.LENGTH_SHORT).show()
-            }
+            themeManager.saveThemeMode(isChecked)
+            themeManager.applyThemeMode(isChecked)
+            Toast.makeText(
+                requireContext(),
+                if (isChecked) "Koyu tema seçildi" else "Açık tema seçildi",
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
 
