@@ -42,6 +42,7 @@ import java.util.*
 import androidx.core.content.FileProvider
 import com.google.firebase.Timestamp
 import com.example.derinogrenme.GameModeActivity
+import android.graphics.Bitmap
 
 class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
@@ -251,70 +252,106 @@ class HomeFragment : Fragment() {
             binding.selectedImageView.setImageURI(imageUri)
 
             // Resmi işle ve tahmin yap
-            val inputStream = requireContext().contentResolver.openInputStream(imageUri)
-            val imageBitmap = BitmapFactory.decodeStream(inputStream)
-            val resizedBitmap = android.graphics.Bitmap.createScaledBitmap(imageBitmap, IMG_SIZE, IMG_SIZE, true)
+            val bitmap = MediaStore.Images.Media.getBitmap(requireContext().contentResolver, imageUri)
+            val resizedBitmap = Bitmap.createScaledBitmap(bitmap, IMG_SIZE, IMG_SIZE, true)
+            
+            val imageProcessor = ImageProcessor.Builder()
+                .add(ResizeOp(IMG_SIZE, IMG_SIZE, ResizeOp.ResizeMethod.BILINEAR))
+                .add(NormalizeOp(0f, 255f))
+                .build()
 
             val tensorImage = TensorImage(DataType.FLOAT32)
             tensorImage.load(resizedBitmap)
-
-            val imageProcessor = ImageProcessor.Builder()
-                .add(ResizeOp(IMG_SIZE, IMG_SIZE, ResizeOp.ResizeMethod.BILINEAR))
-                .add(NormalizeOp(0f, 1f))
-                .build()
-
             val processedImage = imageProcessor.process(tensorImage)
-            val inputBuffer = processedImage.buffer
 
-            val output = Array(1) { FloatArray(1) }
-            tflite.run(inputBuffer, output)
+            val outputBuffer = Array(1) { FloatArray(2) }
+            tflite.run(processedImage.buffer, outputBuffer)
 
-            val outputShape = tflite.getOutputTensor(0).shape()
-            Log.d("TFLiteDebug", "Model output shape: ${outputShape.contentToString()}")
+            val confidence = outputBuffer[0][0]
+            val result = if (confidence > 0.5f) "Gerçek" else "Sahte"
+            val confidencePercentage = (confidence * 100).toInt()
 
-            // Tahmin sonucunu göster
-            val prediction = output[0][0]
-            Log.d("Prediction", "Raw prediction value: $prediction")
+            // Sonuçları göster
+            binding.resultTextView.text = "Sonuç: $result"
+            binding.confidenceTextView.text = "Güven Oranı: %$confidencePercentage"
 
-            val isReal = prediction > 0.5f
-            val confidence = if (isReal) prediction else 1 - prediction
+            // Overlay'i göster
+            showPredictionOverlay(imageUri, result, confidencePercentage)
 
-            val resultText = if (isReal) "REAL" else "FAKE"
-            val resultColor = if (isReal) "#4CAF50" else "#F44336"
+            // Tahmini kaydet
+            savePrediction(result, confidencePercentage, imageUri)
 
-            binding.resultTextView.apply {
-                text = "Sonuç: $resultText"
-                setTextColor(Color.parseColor(resultColor))
-            }
-
-            binding.confidenceTextView.text = "Güven Oranı: ${String.format("%.1f", confidence * 100)}%"
-
-            // Resmi yükle ve tahmin sonucunu kaydet
-            viewLifecycleOwner.lifecycleScope.launch {
-                try {
-                    FirebaseAuth.getInstance().currentUser?.uid?.let { userId ->
-                        // Resmi yerel depolamaya kaydet
-                        val imagePath = storageService.saveImage(imageUri, userId)
-
-                        // Tahmin sonucunu Firestore'a kaydet
-                        val predictionObj = Prediction(
-                            result = resultText,
-                            confidence = confidence,
-                            timestamp = Timestamp.now(),
-                            imageUrl = imagePath ?: ""
-                        )
-
-                        firestoreService.savePrediction(userId, predictionObj)
-                        loadRecentPredictions()
-                    }
-                } catch (e: Exception) {
-                    Toast.makeText(requireContext(), "İşlem sırasında hata oluştu: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
-            }
         } catch (e: Exception) {
             binding.resultTextView.text = "Hata: ${e.message}"
             Toast.makeText(requireContext(), "Resim işlenirken hata oluştu: ${e.message}", Toast.LENGTH_SHORT).show()
             e.printStackTrace()
+        }
+    }
+
+    private fun showPredictionOverlay(imageUri: Uri, result: String, confidence: Int) {
+        // Overlay'i hazırla
+        binding.predictionResultOverlay.apply {
+            // Resmi yükle
+            binding.resultImageView.setImageURI(imageUri)
+            
+            // Sonuç metinlerini ayarla
+            binding.overlayResultText.text = "Sonuç: $result"
+            binding.overlayConfidenceText.text = "Güven Oranı: %$confidence"
+            
+            // Kapatma butonunu ayarla
+            binding.closeOverlayButton.setOnClickListener {
+                hidePredictionOverlay()
+            }
+            
+            // Overlay'i göster
+            visibility = View.VISIBLE
+            alpha = 0f
+            translationY = 100f
+            
+            // Animasyonu başlat
+            animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(300)
+                .start()
+        }
+    }
+
+    private fun hidePredictionOverlay() {
+        binding.predictionResultOverlay.animate()
+            .alpha(0f)
+            .translationY(100f)
+            .setDuration(300)
+            .withEndAction {
+                binding.predictionResultOverlay.visibility = View.GONE
+            }
+            .start()
+    }
+
+    private fun savePrediction(result: String, confidence: Int, imageUri: Uri) {
+        lifecycleScope.launch {
+            try {
+                val currentUser = FirebaseAuth.getInstance().currentUser
+                if (currentUser != null) {
+                    // Resmi Storage'a yükle
+                    val imagePath = storageService.saveImage(imageUri, currentUser.uid)
+                    
+                    // Tahmini Firestore'a kaydet
+                    val prediction = Prediction(
+                        result = result,
+                        confidence = confidence.toFloat() / 100f, // Int'i Float'a çevir ve 0-1 aralığına normalize et
+                        imageUrl = imagePath ?: "",
+                        timestamp = Timestamp.now()
+                    )
+                    
+                    firestoreService.savePrediction(currentUser.uid, prediction)
+                    
+                    // Son tahminleri güncelle
+                    loadRecentPredictions()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Tahmin kaydedilirken hata oluştu: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 

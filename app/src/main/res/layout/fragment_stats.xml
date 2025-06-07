@@ -46,19 +46,23 @@
                     android:textColor="?attr/colorOnSurface"
                     android:layout_marginBottom="16dp" />
 
-                <LinearLayout
+                <GridLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
+                    android:columnCount="2"
+                    android:rowCount="2"
+                    android:alignmentMode="alignMargins"
+                    android:columnOrderPreserved="false"
+                    android:useDefaultMargins="true">
 
+                    <!-- FAKE Satırı -->
                     <TextView
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:text="FAKE"
                         android:textAppearance="?attr/textAppearanceBodyLarge"
-                        android:textColor="?attr/colorError" />
+                        android:textColor="?attr/colorError"
+                        android:layout_gravity="start|center_vertical" />
 
                     <TextView
                         android:id="@+id/statsFakeCount"
@@ -67,15 +71,16 @@
                         android:text="0 (0%)"
                         android:textAppearance="?attr/textAppearanceBodyLarge"
                         android:textColor="?attr/colorError"
-                        android:layout_marginEnd="16dp" />
+                        android:layout_gravity="end|center_vertical" />
 
+                    <!-- REAL Satırı -->
                     <TextView
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:text="REAL"
                         android:textAppearance="?attr/textAppearanceBodyLarge"
-                        android:textColor="?attr/colorPrimary" />
+                        android:textColor="?attr/colorPrimary"
+                        android:layout_gravity="start|center_vertical" />
 
                     <TextView
                         android:id="@+id/statsRealCount"
@@ -83,9 +88,10 @@
                         android:layout_height="wrap_content"
                         android:text="0 (0%)"
                         android:textAppearance="?attr/textAppearanceBodyLarge"
-                        android:textColor="?attr/colorPrimary" />
+                        android:textColor="?attr/colorPrimary"
+                        android:layout_gravity="end|center_vertical" />
 
-                </LinearLayout>
+                </GridLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

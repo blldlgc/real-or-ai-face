@@ -34,12 +34,10 @@
             app:cardElevation="2dp"
             >
 
-            <LinearLayout
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="20dp"
-                android:gravity="center_vertical">
+                android:padding="20dp">
 
                 <com.google.android.material.imageview.ShapeableImageView
                     android:id="@+id/profileImage"
@@ -49,32 +47,33 @@
                     android:contentDescription="Profil resmi"
                     android:background="?attr/colorSurfaceVariant"
                     android:scaleType="centerCrop"
+                    android:layout_centerVertical="true"
                     app:shapeAppearanceOverlay="@style/ShapeAppearance.DerinOgrenme.Circle" />
 
-                <LinearLayout
-                    android:layout_width="0dp"
+                <TextView
+                    android:id="@+id/profileName"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:layout_marginStart="16dp">
+                    android:text="Kullanıcı Adı"
+                    android:textAppearance="?attr/textAppearanceTitleLarge"
+                    android:textColor="?attr/colorOnSurface"
+                    android:layout_toEndOf="@id/profileImage"
+                    android:layout_alignTop="@id/profileImage"
+                    android:layout_marginStart="16dp" />
 
-                    <TextView
-                        android:id="@+id/profileName"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Kullanıcı Adı"
-                        android:textAppearance="?attr/textAppearanceTitleLarge"
-                        android:textColor="?attr/colorOnSurface" />
+                <TextView
+                    android:id="@+id/profileEmail"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="kullanici@email.com"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:layout_toEndOf="@id/profileImage"
+                    android:layout_below="@id/profileName"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="4dp" />
 
-                    <TextView
-                        android:id="@+id/profileEmail"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="kullanici@email.com"
-                        android:textAppearance="?attr/textAppearanceBodyMedium"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
-                </LinearLayout>
-            </LinearLayout>
+            </RelativeLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Ayarlar Kartı -->
