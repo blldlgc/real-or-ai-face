@@ -108,14 +108,26 @@ Modelimiz, derin öğrenme tabanlı bir yaklaşımla yapay zeka ile üretilmiş 
 
 ### Detaylı Performans Analizi
 
-#### Confusion Matrix
-![Confusion Matrix](images/confusionMatrix.png)
+<table>
+<tr>
+<td align="center">
+<img src="images/accuracy.png" width="300">
+<br>
+Accuracy Grafiği
+</td>
+<td align="center">
+<img src="images/confusionMatrix.png" width="300">
+<br>
+Confusion Matrix
+</td>
+<td align="center">
+<img src="images/rocCurve.png" width="300">
+<br>
+ROC Eğrisi
+</td>
 
-#### ROC Eğrisi
-![ROC Curve](images/rocCurve.png)
-
-#### Accuracy Grafiği
-![Accuracy Graph](images/accuracy.png)
+</tr>
+</table>
 
 ## 🤝 Katkıda Bulunma
 
