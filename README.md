@@ -9,8 +9,6 @@ Bu proje, yapay zeka ile üretilmiş görselleri gerçek görsellerden ayırt et
 - 📊 Detaylı istatistikler ve grafikler
 - 🔔 Özelleştirilebilir bildirimler
 - 🌙 Karanlık/Aydınlık tema desteği
-- 📈 Kullanıcı performans takibi
-- 🏆 Başarı rozetleri sistemi
 
 ## 🧠 Model Eğitimi
 
