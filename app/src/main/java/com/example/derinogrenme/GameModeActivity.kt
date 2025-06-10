@@ -67,6 +67,11 @@ class GameModeActivity : AppCompatActivity() {
             startGame()
         }
 
+        // Tekrar Oyna butonunu ayarla
+        binding.playAgainButton.setOnClickListener {
+            startGame()
+        }
+
         // Kaydırma özelliğini ayarla
         setupSwipeGesture()
     }

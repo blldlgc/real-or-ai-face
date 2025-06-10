@@ -100,9 +100,22 @@ git clone https://github.com/blldlgc/real-or-ai-face.git
 
 ## 📊 Model Performansı
 
+Modelimiz, derin öğrenme tabanlı bir yaklaşımla yapay zeka ile üretilmiş görselleri gerçek görsellerden ayırt etmede yüksek başarı göstermiştir.
+
+### Performans Metrikleri
 - Accuracy: %97.60
 - ROC-AUC Score: 0.9986
-- Confusion Matrix analizi ile detaylı performans metrikleri
+
+### Detaylı Performans Analizi
+
+#### Confusion Matrix
+![Confusion Matrix](images/confusionMatrix.png)
+
+#### ROC Eğrisi
+![ROC Curve](images/rocCurve.png)
+
+#### Accuracy Grafiği
+![Accuracy Graph](images/accuracy.png)
 
 ## 🤝 Katkıda Bulunma
 
