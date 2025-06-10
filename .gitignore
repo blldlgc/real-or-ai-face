@@ -15,3 +15,6 @@
 local.properties
 .env
 .env.*
+project_progress.md
+.cursor/rules/my-rule-kotlin.mdc
+

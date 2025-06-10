@@ -264,7 +264,7 @@ class HomeFragment : Fragment() {
             tensorImage.load(resizedBitmap)
             val processedImage = imageProcessor.process(tensorImage)
 
-            val outputBuffer = Array(1) { FloatArray(2) }
+            val outputBuffer = Array(1) { FloatArray(1) }
             tflite.run(processedImage.buffer, outputBuffer)
 
             val confidence = outputBuffer[0][0]
